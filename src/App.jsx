@@ -51,7 +51,7 @@ export default function App() {
 
   // 1. Inisialisasi Auth & Meta
   useEffect(() => {
-    document.title = "LiteBooks - Digital Library";
+    document.title = "LiteBooks - Mini Books";
     
     // Cek Session Aktif
     if (supabase) {
