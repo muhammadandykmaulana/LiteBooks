@@ -1,0 +1,13 @@
+- name: Install and Build 🔧
+run: |
+  npm install
+  npm run build
+env:
+  VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+  VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY }}
+
+- name: Deploy 🚀
+uses: JamesIves/github-pages-deploy-action@v4
+with:
+  folder: dist # Folder hasil build vite
+  branch: gh-pages

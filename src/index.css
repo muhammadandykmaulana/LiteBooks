@@ -1,20 +1,4 @@
-/* Reset dasar biar tampilan penuh dan font enak dibaca */
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-  background-color: #f8fafc;
-}
-
 /* Kalau kamu pakai Tailwind, hapus yang atas dan pakai 3 baris ini saja: */
-/* @tailwind base; */
-/* @tailwind components; */
-/* @tailwind utilities; */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
