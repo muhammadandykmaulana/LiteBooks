@@ -129,19 +129,50 @@ export default function App() {
     }
 
     setLoading(true);
+    // 1. Coba ambil data dari DB
     const { data, error } = await supabase
       .from('books')
       .select('*')
       .order('created_at', { ascending: false });
     
     if (!error) {
-      // LOGIKA Jika database kosong, tampilkan INITIAL_BOOKS
+      // 2. Jika DB KOSONG, lakukan Auto-Seeding (Insert otomatis)
       if (data.length === 0) {
-        setBooks(INITIAL_BOOKS);
+        console.log("Database kosong. Memulai inisialisasi data (Auto-Seeding)...");
+        
+        // Siapkan data: Hapus ID (biar DB generate UUID baru) dan isLocal
+        const seedData = INITIAL_BOOKS.map(({ id, isLocal, ...book }) => ({
+          ...book,
+          is_hidden: false // Pastikan kolom is_hidden terisi
+        }));
+
+        // Insert ke Supabase
+        const { error: seedError } = await supabase.from('books').insert(seedData);
+        
+        if (!seedError) {
+          console.log("Auto-Seeding berhasil. Mengambil data baru...");
+          // 3. Ambil ulang data yang baru saja di-insert agar kita dapat UUID aslinya
+          const { data: freshData } = await supabase
+            .from('books')
+            .select('*')
+            .order('created_at', { ascending: false });
+            
+          setBooks(freshData || []); 
+        } else {
+          console.error("Gagal Auto-Seeding:", seedError);
+          // Fallback: Tampilkan data lokal saja jika gagal insert (misal karena RLS memblokir)
+          setBooks(INITIAL_BOOKS);
+        }
       } else {
+        // Jika DB tidak kosong, gunakan data DB
         setBooks(data);
       }
+    } else {
+      console.error("Error fetching books:", error);
+      // Fallback jika koneksi error
+      setBooks(INITIAL_BOOKS);
     }
+    
     setLoading(false);
   };
 
@@ -175,7 +206,6 @@ export default function App() {
     if (!formData.title || !formData.content || !supabase) return;
     setLoading(true);
     
-    // Hapus properti ID jika itu adalah data sampel (agar dibuatkan ID baru oleh DB)
     const payload = { 
       title: formData.title,
       description: formData.description,
@@ -185,12 +215,11 @@ export default function App() {
     };
     
     let error;
-    // Jika sedang edit DAN bukan data sampel lokal (artinya data dari DB)
+    // Cek ID: Pastikan kita update berdasarkan UUID dari DB, bukan ID sampel
     if (isEditing && selectedBook && !selectedBook.isLocal) {
       const { error: updateError } = await supabase.from('books').update(payload).eq('id', selectedBook.id);
       error = updateError;
     } else {
-      // Jika data baru ATAU data sampel yang diedit (Save as new)
       const { error: insertError } = await supabase.from('books').insert([payload]);
       error = insertError;
     }
@@ -208,6 +237,7 @@ export default function App() {
   const deleteBook = async (id, isLocal, e) => {
     e.stopPropagation();
     if (isLocal) {
+      // Jika masih dalam mode fallback lokal
       if(window.confirm('Sembunyikan materi sampel ini?')) setBooks(books.filter(b => b.id !== id));
       return;
     }
@@ -221,17 +251,16 @@ export default function App() {
 
   const toggleVisibility = async (book, e) => {
     e.stopPropagation();
-    if (book.isLocal) return alert("Data sampel tidak bisa diubah statusnya di database.");
+    if (book.isLocal) return alert("Data sampel (Lokal) tidak bisa diubah statusnya. Silakan refresh halaman jika data sudah tersinkron ke DB.");
     if (!supabase) return;
 
     const newStatus = !book.is_hidden;
-    // Optimistic UI update
     setBooks(books.map(b => b.id === book.id ? { ...b, is_hidden: newStatus } : b));
 
     const { error } = await supabase.from('books').update({ is_hidden: newStatus }).eq('id', book.id);
     if (error) {
       alert("Gagal update status: " + error.message);
-      fetchBooks(); // Revert on error
+      fetchBooks(); 
     }
   };
 
@@ -239,7 +268,6 @@ export default function App() {
   const filteredBooks = useMemo(() => {
     let result = books;
     
-    // Filter Pencarian
     if (searchQuery) {
       result = result.filter(b => 
         b.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -247,7 +275,6 @@ export default function App() {
       );
     }
 
-    // Filter Visibility: Guest HANYA melihat yang TIDAK hidden
     if (!user) {
       result = result.filter(b => !b.is_hidden);
     }
@@ -268,7 +295,7 @@ export default function App() {
       });
     } else {
       setIsEditing(false);
-      setSelectedBook(null); // Penting reset ini
+      setSelectedBook(null);
       setFormData({ title: '', description: '', content: '', category: 'General', is_hidden: false });
     }
     setView('editor');
@@ -344,6 +371,7 @@ export default function App() {
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex gap-2 items-center">
                         <span className="bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full">{book.category}</span>
+                        {/* Jika data masih lokal, tampilkan badge Sampel */}
                         {book.isLocal && <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1.5 rounded-full flex items-center gap-1"><Database size={10} /> Sampel</span>}
                         {book.is_hidden && <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-1.5 rounded-full flex items-center gap-1"><EyeOff size={10} /> Hidden</span>}
                       </div>
