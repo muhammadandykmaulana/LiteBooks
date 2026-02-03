@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import ReactMarkdown from 'https://esm.sh/react-markdown@9';
-import remarkGfm from 'https://esm.sh/remark-gfm@4';
-import rehypeRaw from 'https://esm.sh/rehype-raw@7';
+// PERBAIKAN: Menggunakan import dari npm
+import { createClient } from '@supabase/supabase-js';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { 
-  Book, Plus, LogIn, LogOut, Trash2, Edit3, ChevronLeft, Layout, Save, Search, AlertCircle, Loader2, Database
+  Book, Plus, LogIn, LogOut, Trash2, Edit3, ChevronLeft, Layout, Save, Search, AlertCircle, Loader2, Database, Eye, EyeOff
 } from 'lucide-react';
 
-// --- KONFIGURASI SUPABASE ---
 // --- KONFIGURASI SUPABASE ---
 const getSupabaseConfig = () => {
   let url = "";
